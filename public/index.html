@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <title>User Search</title>
+</head>
+
+<body>
+    <div class="d-grid gap-2">
+        <button class="btn btn-info" onclick="submitFile()">Submit File</button>
+
+    </div>
+    <nav class="navbar bg-body-tertiary">
+        <div class="input-group">
+            <span class="input-group-text" id="basic-addon1">@</span>
+
+            <input type="text" id="name" name="name" class="form-control" placeholder="search" aria-label="Username"
+                aria-describedby="basic-addon1">
+            <button class="btn btn-success" onclick="searchUsers()">Search</button>
+    </nav>
+    <button class="btn btn-secondary btn-lg btn-block" onclick="getAll()">Get all Data</button>
+    <input type="file" id="file">
+    <button onclick="submitFile()">Submit File</button>
+
+    <button onclick="download()">download </button>
+    </div>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr id="headerRow" class="table-dark">
+                <!-- Headers will be dynamically added here -->
+            </tr>
+        </thead>
+        <tbody id="userBody" scope="row" class="table-active"></tbody>
+    </table>
+
+    <script>
+        const download = () => {
+            window.location.href = "/download";
+        }
+        const getAll = () => {
+            fetch("getAll", {
+                method: "GET"
+            })
+                .then(response => response.json())
+                .then(data => displayUsers(data))
+                .catch(error => console.error('Error fetching all users:', error));
+        }
+
+        const submitFile = () => {
+            const fileInput = document.getElementById("file").files[0];
+            const formData = new FormData();
+            formData.append("file", fileInput);
+
+            fetch("/submit", {
+                method: "POST",
+                body: formData,
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Server response:", data);
+                    // Optionally, update the table after submitting the file
+                    getAll();
+                })
+                .catch(error => {
+                    console.error("Error sending file to server:", error);
+                });
+        }
+
+        function searchUsers() {
+            const name = document.getElementById('name').value;
+
+            fetch(`/search?name=${name}`)
+                .then(response => response.json())
+                .then(data => displayUsers(data))
+                .catch(error => console.error('Error searching users:', error));
+        }
+
+        function displayUsers(users) {
+            const userTable = document.getElementById('userTable');
+            const headerRow = document.getElementById('headerRow');
+            const userBody = document.getElementById('userBody');
+
+            // Clear existing content
+            headerRow.innerHTML = '';
+            userBody.innerHTML = '';
+
+            // Update headers
+            const headers = Object.keys(users[0]);
+            headers.forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+            console.log("users", users);
+            if (users.length === 0) {
+                const row = document.createElement('tr');
+                const td = document.createElement('td');
+                td.colSpan = headers.length; // Span the entire row
+                td.textContent = "No Records Exist";
+                row.appendChild(td);
+                userBody.appendChild(row);
+            } else {
+                // Update rows
+                users.forEach(user => {
+                    const row = document.createElement('tr');
+                    headers.forEach(header => {
+                        const td = document.createElement('td');
+                        td.textContent = user[header];
+                        row.appendChild(td);
+                    });
+                    userBody.appendChild(row);
+                });
+            }
+        }
+    </script>
+</body>
+
+</html>
